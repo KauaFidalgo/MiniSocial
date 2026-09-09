@@ -1,211 +1,99 @@
-import { getAPIBaseURL, isValidURL } from '../config/apiConfig';
-
+// Frontend-only mock service: local in-memory data
 export const CURRENT_USER_ID = 1;
 
-/**
- * Faz uma requisição GET com tratamento robusto de erros
- */
-async function fetchJson(url) {
-  const baseUrl = getAPIBaseURL();
-  const fullUrl = `${baseUrl}${url}`;
+const users = [
+  {
+    id: 1,
+    name: 'Késsia Milena',
+    username: 'kessia.milena',
+    bio: 'Desenvolvedora e entusiasta de tecnologia. Compartilhando projetos e aprendizados.',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&q=80',
+    followers: [2],
+    following: [2],
+    favoritePosts: [1, 3],
+  },
+  {
+    id: 2,
+    name: 'Ana Souza',
+    username: 'ana.souza',
+    bio: 'Product designer apaixonada por interfaces claras e acessíveis.',
+    avatar: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=500&q=80',
+    followers: [1],
+    following: [1],
+    favoritePosts: [],
+  },
+];
 
-  // Valida a URL antes de tentar fazer fetch
-  if (!isValidURL(fullUrl)) {
-    throw new Error(`URL inválida: ${fullUrl}`);
-  }
+const posts = [
+  { id: 1, userId: 1, image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=1000&q=80', text: 'Jornada de aprendizado' },
+  { id: 2, userId: 1, image: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=1000&q=80', text: 'Momento de foco' },
+  { id: 3, userId: 1, image: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=1000&q=80', text: 'Inspiração diária' },
+  { id: 4, userId: 1, image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1000&q=80', text: 'Organizando ideias' },
+  { id: 5, userId: 1, image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1000&q=80', text: 'Rotina produtiva' },
+  { id: 6, userId: 2, image: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1000&q=80', text: 'Design que comunica' },
+  { id: 7, userId: 1, image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=1000&q=80', text: 'Ambientes inspiradores' },
+];
 
-  console.log(`[API] GET ${fullUrl}`);
-
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos de timeout
-
-    const response = await fetch(fullUrl, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error(`[API] Erro ao buscar ${fullUrl}:`, error.message);
-
-    if (error.name === 'AbortError') {
-      throw new Error('Requisição expirou. Servidor não respondeu a tempo.');
-    }
-
-    throw error;
-  }
+function delay(result, ms = 200) {
+  return new Promise((res) => setTimeout(() => res(result), ms));
 }
 
 export async function fetchUserById(userId) {
-  return fetchJson(`/users/${userId}`);
+  const u = users.find((x) => x.id === Number(userId));
+  return delay(u ? { ...u } : null);
 }
 
 export async function fetchPostsByUser(userId) {
-  return fetchJson(`/posts?userId=${userId}`);
+  return delay(posts.filter((p) => p.userId === Number(userId)).map((p) => ({ ...p })));
 }
 
 export async function fetchAllPosts() {
-  return fetchJson('/posts');
+  return delay(posts.map((p) => ({ ...p })));
 }
 
 export async function fetchCurrentUserProfile(userId) {
-  const [user, posts] = await Promise.all([
-    fetchUserById(userId),
-    fetchPostsByUser(userId),
-  ]);
-
-  return {
-    ...user,
-    postsCount: posts.length,
-  };
+  const user = users.find((u) => u.id === Number(userId));
+  if (!user) return delay(null);
+  const userPosts = posts.filter((p) => p.userId === user.id);
+  return delay({ ...user, postsCount: userPosts.length });
 }
 
 export async function updateUserProfile(userId, updates) {
-  const baseUrl = getAPIBaseURL();
-  const fullUrl = `${baseUrl}/users/${userId}`;
-
-  if (!isValidURL(fullUrl)) {
-    throw new Error(`URL inválida: ${fullUrl}`);
-  }
-
-  console.log(`[API] PATCH ${fullUrl}`, updates);
-
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-    const response = await fetch(fullUrl, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updates),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error(`[API] Erro ao atualizar perfil:`, error.message);
-    throw new Error('Não foi possível salvar as alterações do perfil.');
-  }
+  const idx = users.findIndex((u) => u.id === Number(userId));
+  if (idx === -1) return delay(null);
+  users[idx] = { ...users[idx], ...updates };
+  return delay({ ...users[idx] });
 }
 
 export async function updateFavoritePosts(userId, favoritePosts) {
-  const baseUrl = getAPIBaseURL();
-  const fullUrl = `${baseUrl}/users/${userId}`;
-
-  if (!isValidURL(fullUrl)) {
-    throw new Error(`URL inválida: ${fullUrl}`);
-  }
-
-  console.log(`[API] PATCH ${fullUrl}`, { favoritePosts });
-
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-    const response = await fetch(fullUrl, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ favoritePosts }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error(`[API] Erro ao atualizar favoritos:`, error.message);
-    throw new Error('Não foi possível atualizar os favoritos.');
-  }
+  const idx = users.findIndex((u) => u.id === Number(userId));
+  if (idx === -1) return delay(null);
+  users[idx].favoritePosts = [...favoritePosts];
+  return delay({ ...users[idx] });
 }
 
 export async function fetchAllUsers() {
-  return fetchJson('/users');
-}
-
-async function patchJson(url, body) {
-  const baseUrl = getAPIBaseURL();
-  const fullUrl = `${baseUrl}${url}`;
-
-  if (!isValidURL(fullUrl)) {
-    throw new Error(`URL inválida: ${fullUrl}`);
-  }
-
-  console.log(`[API] PATCH ${fullUrl}`, body);
-
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-    const response = await fetch(fullUrl, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error(`[API] Erro ao fazer PATCH ${fullUrl}:`, error.message);
-    throw new Error('Não foi possível atualizar os dados do usuário.');
-  }
+  return delay(users.map((u) => ({ ...u })));
 }
 
 export async function toggleFollowRelationship(currentUserId, targetUserId, shouldFollow) {
-  const [currentUser, targetUser] = await Promise.all([
-    fetchUserById(currentUserId),
-    fetchUserById(targetUserId),
-  ]);
+  const current = users.find((u) => u.id === Number(currentUserId));
+  const target = users.find((u) => u.id === Number(targetUserId));
+  if (!current || !target) return delay(null);
 
-  const currentFollowing = new Set(currentUser.following ?? []);
-  const targetFollowers = new Set(targetUser.followers ?? []);
+  const curFollowing = new Set(current.following || []);
+  const tarFollowers = new Set(target.followers || []);
 
   if (shouldFollow) {
-    currentFollowing.add(targetUserId);
-    targetFollowers.add(currentUserId);
+    curFollowing.add(Number(targetUserId));
+    tarFollowers.add(Number(currentUserId));
   } else {
-    currentFollowing.delete(targetUserId);
-    targetFollowers.delete(currentUserId);
+    curFollowing.delete(Number(targetUserId));
+    tarFollowers.delete(Number(currentUserId));
   }
 
-  const [updatedCurrentUser, updatedTargetUser] = await Promise.all([
-    patchJson(`/users/${currentUserId}`, { following: [...currentFollowing] }),
-    patchJson(`/users/${targetUserId}`, { followers: [...targetFollowers] }),
-  ]);
+  current.following = Array.from(curFollowing);
+  target.followers = Array.from(tarFollowers);
 
-  return {
-    currentUser: updatedCurrentUser,
-    targetUser: updatedTargetUser,
-  };
+  return delay({ currentUser: { ...current }, targetUser: { ...target } });
 }

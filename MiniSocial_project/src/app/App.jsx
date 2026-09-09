@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ProfileProvider } from '../context/ProfileContext';
-import PreferencesScreen from './(tabs)';
+import PreferencesScreen from './preferences';
 import ProfileScreen from './perfil';
 
 export default function App() {

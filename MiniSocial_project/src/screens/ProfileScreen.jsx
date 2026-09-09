@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Image,
   ScrollView,
   StyleSheet,
@@ -8,7 +9,11 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
+  Platform,
 } from 'react-native';
+
+const baseFont = Platform.select({ ios: 'System', android: 'sans-serif', default: 'System' });
 import BackIcon from '../../assets/Icons/BackIcon.png';
 import CreateIcon from '../../assets/Icons/CreateIcon.png';
 import FavIcon from '../../assets/Icons/FavIcon.png';
@@ -25,6 +30,14 @@ export default function ProfileScreen({ mode = 'view', onEdit, onBack }) {
   const { profile, posts, users, loading, error, toggleFavorite, toggleFollow, updateProfile } = useProfile();
   const [activeTab, setActiveTab] = useState('posts');
   const [peopleListMode, setPeopleListMode] = useState(null);
+  const modalAnim = useRef(new Animated.Value(0)).current;
+  const { width, height } = useWindowDimensions();
+
+  useEffect(() => {
+    if (peopleListMode) {
+      Animated.timing(modalAnim, { toValue: 1, duration: 260, useNativeDriver: true }).start();
+    }
+  }, [peopleListMode, modalAnim]);
 
   if (loading) {
     return (
@@ -53,6 +66,12 @@ export default function ProfileScreen({ mode = 'view', onEdit, onBack }) {
 
     return posts.filter((post) => post.userId === profile.id);
   }, [activeTab, posts, profile]);
+
+  // responsive grid calculation
+  const horizontalPadding = 24; // grid padding total (left+right)
+  const gap = 8;
+  const columns = width >= 1000 ? 4 : width >= 700 ? 3 : width >= 420 ? 2 : 1;
+  const itemWidth = Math.floor((width - horizontalPadding - gap * (columns - 1)) / columns);
 
   const followerUsers = useMemo(
     () => (profile.followers ?? []).map((id) => users.find((user) => user.id === id)).filter(Boolean),
@@ -117,16 +136,17 @@ export default function ProfileScreen({ mode = 'view', onEdit, onBack }) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.topbar}>
-          <View style={styles.logoWrap}>
-            <Image source={LogoMiniSocial} style={styles.logoImage} resizeMode="contain" />
-            <Text style={styles.triplyText}>Triply</Text>
-          </View>
-          <TouchableOpacity style={styles.settingsButton} activeOpacity={0.8}>
-            <Image source={SenttingsIcon} style={styles.settingsIcon} resizeMode="contain" />
-          </TouchableOpacity>
-        </View>
+            <View style={styles.logoWrap}>
+              <Image source={LogoMiniSocial} style={styles.logoImage} resizeMode="contain" />
+              <Text style={styles.triplyText}>Triply</Text>
+            </View>
 
-        <Text style={styles.profileTitle}>Perfil</Text>
+            <Text style={styles.centerTitle} accessibilityRole="header">Perfil</Text>
+
+            <TouchableOpacity style={styles.settingsButton} activeOpacity={0.8}>
+              <Image source={SenttingsIcon} style={styles.settingsIcon} resizeMode="contain" />
+            </TouchableOpacity>
+          </View>
 
         <View style={styles.avatarWrap}>
           <Image source={{ uri: profile.avatar }} style={styles.avatar} resizeMode="cover" />
@@ -200,10 +220,9 @@ export default function ProfileScreen({ mode = 'view', onEdit, onBack }) {
           ) : (
             visiblePosts.map((post) => {
               const isFavorite = profile.favoritePosts.includes(post.id);
-
               return (
-                <View key={post.id} style={styles.postCard}>
-                  <Image source={{ uri: post.image }} style={styles.post} resizeMode="cover" />
+                <View key={post.id} style={[styles.postCard, { width: itemWidth, marginBottom: gap }]}> 
+                  <Image source={{ uri: post.image }} style={[styles.post, { height: itemWidth }]} resizeMode="cover" />
                   <TouchableOpacity
                     style={[styles.favoriteButton, isFavorite && styles.favoriteButtonActive]}
                     onPress={() => toggleFavorite(post.id)}
@@ -223,11 +242,29 @@ export default function ProfileScreen({ mode = 'view', onEdit, onBack }) {
       </ScrollView>
 
       {peopleListMode && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+        <Animated.View style={[styles.modalOverlay, { opacity: modalAnim }]} pointerEvents="auto">
+          <Animated.View
+            style={[
+              styles.modalCard,
+              {
+                transform: [
+                  {
+                    translateY: modalAnim.interpolate({ inputRange: [0, 1], outputRange: [height, 0] }),
+                  },
+                ],
+              },
+            ]}
+          >
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{peopleListMode === 'followers' ? 'Seguidores' : 'Seguindo'}</Text>
-              <TouchableOpacity onPress={() => setPeopleListMode(null)} activeOpacity={0.8}>
+              <TouchableOpacity
+                onPress={() => {
+                  Animated.timing(modalAnim, { toValue: 0, duration: 220, useNativeDriver: true }).start(() =>
+                    setPeopleListMode(null)
+                  );
+                }}
+                activeOpacity={0.8}
+              >
                 <Text style={styles.closeText}>Fechar</Text>
               </TouchableOpacity>
             </View>
@@ -264,8 +301,8 @@ export default function ProfileScreen({ mode = 'view', onEdit, onBack }) {
                 })
               )}
             </ScrollView>
-          </View>
-        </View>
+          </Animated.View>
+        </Animated.View>
       )}
 
       <View style={styles.nav}>
@@ -397,6 +434,17 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginLeft: 6,
     letterSpacing: -0.3,
+    fontFamily: baseFont,
+  },
+  centerTitle: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#111111',
+    fontFamily: baseFont,
   },
   settingsButton: {
     width: 28,
@@ -413,6 +461,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '800',
     color: '#111111',
+    fontFamily: baseFont,
     letterSpacing: -0.8,
     marginTop: 8,
     marginBottom: 2,
@@ -454,6 +503,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     color: '#111111',
+    fontFamily: baseFont,
     marginTop: 10,
     letterSpacing: -0.4,
   },
@@ -461,6 +511,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 15,
     color: '#7A7A7A',
+    fontFamily: baseFont,
     marginTop: 2,
   },
   stats: {
@@ -477,10 +528,12 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     color: '#111111',
+    fontFamily: baseFont,
   },
   statLabel: {
     fontSize: 11,
     color: '#7E7E7E',
+    fontFamily: baseFont,
     marginTop: 3,
     textAlign: 'center',
   },
@@ -491,6 +544,7 @@ const styles = StyleSheet.create({
     color: '#202020',
     fontWeight: '600',
     marginTop: 18,
+    fontFamily: baseFont,
     paddingHorizontal: 26,
   },
   selectorRow: {
@@ -575,6 +629,7 @@ const styles = StyleSheet.create({
   emptyText: {
     color: '#707070',
     fontSize: 13,
+    fontFamily: baseFont,
   },
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -600,10 +655,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '800',
     color: '#111111',
+    fontFamily: baseFont,
   },
   closeText: {
     color: '#FD7509',
     fontWeight: '700',
+    fontFamily: baseFont,
   },
   peopleList: {
     paddingBottom: 18,
@@ -630,10 +687,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111111',
     fontSize: 14,
+    fontFamily: baseFont,
   },
   personUsername: {
     color: '#767676',
     fontSize: 12,
+    fontFamily: baseFont,
     marginTop: 2,
   },
   followAction: {
@@ -709,6 +768,7 @@ const styles = StyleSheet.create({
     marginTop: 3,
     fontSize: 10,
     color: '#111111',
+    fontFamily: baseFont,
   },
   selectedNavLabel: {
     color: '#FD7509',
@@ -735,6 +795,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     color: '#FD7509',
+    fontFamily: baseFont,
     textAlign: 'center',
   },
   avatarWrapEdit: {
@@ -774,6 +835,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#111111',
+    fontFamily: baseFont,
     marginBottom: 6,
     marginTop: 12,
   },
@@ -786,6 +848,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 14,
     color: '#111111',
+    fontFamily: baseFont,
   },
   bioInput: {
     minHeight: 106,
@@ -797,6 +860,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 14,
     color: '#111111',
+    fontFamily: baseFont,
     textAlignVertical: 'top',
   },
   saveButton: {
@@ -811,5 +875,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '700',
+    fontFamily: baseFont,
   },
 });

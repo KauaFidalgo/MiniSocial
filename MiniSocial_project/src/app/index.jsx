@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animated, SafeAreaView, StatusBar, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ProfileProvider } from '../context/ProfileContext';
-import PreferencesScreen from './(tabs)';
+import PreferencesScreen from './preferences';
 import ProfileScreen from '../screens/ProfileScreen';
 
 function ScreenTransition({ children }) {

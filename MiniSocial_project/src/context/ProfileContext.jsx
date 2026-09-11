@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
   CURRENT_USER_ID,
   fetchAllPosts,
@@ -18,7 +18,7 @@ export function ProfileProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -42,73 +42,83 @@ export function ProfileProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadData();
   }, []);
 
-  const updateProfile = async (updates) => {
-    if (!profile) return null;
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial async fetch on mount, guarded internally by try/catch/finally
+    loadData();
+  }, [loadData]);
 
-    const nextProfile = await updateUserProfile(profile.id, updates);
-    setProfile((current) => ({ ...current, ...nextProfile }));
-    return nextProfile;
-  };
+  const updateProfile = useCallback(
+    async (updates) => {
+      if (!profile) return null;
 
-  const toggleFavorite = async (postId) => {
-    if (!profile) return false;
+      const nextProfile = await updateUserProfile(profile.id, updates);
+      setProfile((current) => ({ ...current, ...nextProfile }));
+      return nextProfile;
+    },
+    [profile]
+  );
 
-    const favoritePosts = profile.favoritePosts.includes(postId)
-      ? profile.favoritePosts.filter((id) => id !== postId)
-      : [...profile.favoritePosts, postId];
+  const toggleFavorite = useCallback(
+    async (postId) => {
+      if (!profile) return false;
 
-    const updatedUser = await updateFavoritePosts(profile.id, favoritePosts);
-    setProfile((current) => ({ ...current, ...updatedUser }));
-    return updatedUser.favoritePosts.includes(postId);
-  };
+      const favoritePosts = profile.favoritePosts.includes(postId)
+        ? profile.favoritePosts.filter((id) => id !== postId)
+        : [...profile.favoritePosts, postId];
 
-  const toggleFollow = async (targetUserId) => {
-    if (!profile) return false;
+      const updatedUser = await updateFavoritePosts(profile.id, favoritePosts);
+      setProfile((current) => ({ ...current, ...updatedUser }));
+      return updatedUser.favoritePosts.includes(postId);
+    },
+    [profile]
+  );
 
-    const isFollowing = (profile.following ?? []).includes(targetUserId);
-    const nextIsFollowing = !isFollowing;
+  const toggleFollow = useCallback(
+    async (targetUserId) => {
+      if (!profile) return false;
 
-    await toggleFollowRelationship(profile.id, targetUserId, nextIsFollowing);
+      const isFollowing = (profile.following ?? []).includes(targetUserId);
+      const nextIsFollowing = !isFollowing;
 
-    setProfile((current) => ({
-      ...current,
-      following: nextIsFollowing
-        ? [...new Set([...(current.following ?? []), targetUserId])]
-        : (current.following ?? []).filter((id) => id !== targetUserId),
-    }));
+      await toggleFollowRelationship(profile.id, targetUserId, nextIsFollowing);
 
-    setAllUsers((currentUsers) =>
-      currentUsers.map((user) => {
-        if (user.id === profile.id) {
-          return {
-            ...user,
-            following: nextIsFollowing
-              ? [...new Set([...(user.following ?? []), targetUserId])]
-              : (user.following ?? []).filter((id) => id !== targetUserId),
-          };
-        }
+      setProfile((current) => ({
+        ...current,
+        following: nextIsFollowing
+          ? [...new Set([...(current.following ?? []), targetUserId])]
+          : (current.following ?? []).filter((id) => id !== targetUserId),
+      }));
 
-        if (user.id === targetUserId) {
-          return {
-            ...user,
-            followers: nextIsFollowing
-              ? [...new Set([...(user.followers ?? []), profile.id])]
-              : (user.followers ?? []).filter((id) => id !== profile.id),
-          };
-        }
+      setAllUsers((currentUsers) =>
+        currentUsers.map((user) => {
+          if (user.id === profile.id) {
+            return {
+              ...user,
+              following: nextIsFollowing
+                ? [...new Set([...(user.following ?? []), targetUserId])]
+                : (user.following ?? []).filter((id) => id !== targetUserId),
+            };
+          }
 
-        return user;
-      })
-    );
+          if (user.id === targetUserId) {
+            return {
+              ...user,
+              followers: nextIsFollowing
+                ? [...new Set([...(user.followers ?? []), profile.id])]
+                : (user.followers ?? []).filter((id) => id !== profile.id),
+            };
+          }
 
-    return nextIsFollowing;
-  };
+          return user;
+        })
+      );
+
+      return nextIsFollowing;
+    },
+    [profile]
+  );
 
   const value = useMemo(
     () => ({
@@ -122,7 +132,7 @@ export function ProfileProvider({ children }) {
       toggleFavorite,
       toggleFollow,
     }),
-    [profile, allPosts, allUsers, loading, error]
+    [profile, allPosts, allUsers, loading, error, loadData, updateProfile, toggleFavorite, toggleFollow]
   );
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;

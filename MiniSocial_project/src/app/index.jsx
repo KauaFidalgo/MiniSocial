@@ -1,13 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Animated, SafeAreaView, StatusBar, StyleSheet } from 'react-native';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import React, { useEffect, useState } from 'react';
+import { Animated, StatusBar, StyleSheet } from 'react-native';
+import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { ProfileProvider } from '../context/ProfileContext';
 import PreferencesScreen from './preferences';
 import ProfileScreen from '../screens/ProfileScreen';
+import HomeScreen from '../screens/HomeScreen';
+import CreateScreen from '../screens/CreateScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
 
 function ScreenTransition({ children }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(10)).current;
+  const [opacity] = useState(() => new Animated.Value(0));
+  const [translateY] = useState(() => new Animated.Value(10));
 
   useEffect(() => {
     Animated.parallel([
@@ -39,8 +42,25 @@ function ScreenTransition({ children }) {
   );
 }
 
+// Footer destinations share one navigation handler so every screen's
+// BottomNav (Home / Criar / Notificações / Perfil) drives the same
+// screen state machine used by the rest of the app.
+const FOOTER_SCREENS = {
+  home: 'home',
+  create: 'create',
+  notifications: 'notifications',
+  perfil: 'profile',
+};
+
 export default function App() {
   const [screen, setScreen] = useState('preferences');
+
+  const handleNavigate = (key) => {
+    const target = FOOTER_SCREENS[key];
+    if (target) {
+      setScreen(target);
+    }
+  };
 
   return (
     <SafeAreaProvider>
@@ -54,9 +74,27 @@ export default function App() {
             </ScreenTransition>
           )}
 
+          {screen === 'home' && (
+            <ScreenTransition>
+              <HomeScreen onNavigate={handleNavigate} />
+            </ScreenTransition>
+          )}
+
+          {screen === 'create' && (
+            <ScreenTransition>
+              <CreateScreen onNavigate={handleNavigate} />
+            </ScreenTransition>
+          )}
+
+          {screen === 'notifications' && (
+            <ScreenTransition>
+              <NotificationsScreen onNavigate={handleNavigate} />
+            </ScreenTransition>
+          )}
+
           {screen === 'profile' && (
             <ScreenTransition>
-              <ProfileScreen onEdit={() => setScreen('edit')} />
+              <ProfileScreen onEdit={() => setScreen('edit')} onNavigate={handleNavigate} />
             </ScreenTransition>
           )}
 

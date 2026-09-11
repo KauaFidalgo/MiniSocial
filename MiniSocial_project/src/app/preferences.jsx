@@ -6,21 +6,24 @@ import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const interests = [
-  ['Comedy', '💡'],
-  ['Daily Life', '◔'],
-  ['Animals', '🐱'],
-  ['Food', '🍔'],
-  ['Gaming', '🎮'],
-  ['Travel', '✈️'],
-  ['DIY', '✂️'],
-  ['Sports', '🏀'],
-  ['Beauty & Style', '💄'],
-  ['Fashion Accessories', '🧢'],
-  ['Art', '🎨'],
-  ['Tech', '💻'],
-  ['Auto', '🚗'],
-  ['Dance', '💃'],
-  ['Oddly Satisfying', '😵'],
+  ['Praias paradisíacas', '🏝️'],
+  ['Trilhas e caminhadas', '🥾'],
+  ['Aventura', '🧗'],
+  ['Gastronomia local', '🍜'],
+  ['Cultura e história', '🏛️'],
+  ['Natureza', '🌿'],
+  ['Cachoeiras', '💦'],
+  ['Acampamento', '⛺'],
+  ['Viagens de carro', '🚗'],
+  ['Viagens internacionais', '🌎'],
+  ['Cidades históricas', '🏘️'],
+  ['Vida noturna', '🌙'],
+  ['Ecoturismo', '🌱'],
+  ['Fotografia de viagem', '📸'],
+  ['Mochilão', '🎒'],
+  ['Resorts e hotéis', '🏨'],
+  ['Ilhas e destinos tropicais', '🌴'],
+  ['Esportes e atividades', '🏄'],
 ];
 
 export default function PreferencesScreen({ onNext }) {
@@ -45,12 +48,15 @@ export default function PreferencesScreen({ onNext }) {
             <Text style={styles.title}>Escolha suas</Text>
             <Text style={styles.title}>preferências</Text>
           </View>
-          <TouchableOpacity activeOpacity={0.8}>
-            <Text style={styles.skip} onPress={onNext}>Skip</Text>
+
+          <TouchableOpacity activeOpacity={0.8} onPress={onNext}>
+            <Text style={styles.skip}>Pular</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.subtitle}>Tenha recomendações personalizadas !</Text>
+        <Text style={styles.subtitle}>
+          Encontre experiências que combinam com você!
+        </Text>
 
         <View style={styles.chipsWrap}>
           {interests.map(([name, icon]) => {
@@ -63,17 +69,32 @@ export default function PreferencesScreen({ onNext }) {
                 onPress={() => toggle(name)}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
-                style={[styles.chip, active && styles.activeChip]}
+                style={[
+                  styles.chip,
+                  active && styles.activeChip,
+                ]}
               >
                 <Text style={styles.icon}>{icon}</Text>
-                <Text style={[styles.chipText, active && styles.activeText]}>{name}</Text>
+
+                <Text
+                  style={[
+                    styles.chipText,
+                    active && styles.activeText,
+                  ]}
+                >
+                  {name}
+                </Text>
               </TouchableOpacity>
             );
           })}
         </View>
       </ScrollView>
 
-      <TouchableOpacity style={styles.nextButton} onPress={onNext} activeOpacity={0.9}>
+      <TouchableOpacity
+        style={styles.nextButton}
+        onPress={onNext}
+        activeOpacity={0.9}
+      >
         <Text style={styles.nextText}>Próximo</Text>
       </TouchableOpacity>
     </View>
@@ -85,23 +106,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+
   scrollView: {
     flex: 1,
   },
+
   scrollContent: {
     paddingHorizontal: 18,
     paddingTop: 18,
     paddingBottom: 90,
   },
+
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginTop: 8,
   },
+
   titleWrap: {
     flex: 1,
   },
+
   title: {
     color: '#101010',
     fontSize: 32,
@@ -109,18 +135,21 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.8,
   },
+
   skip: {
     color: '#8F8F8F',
     fontSize: 13,
     fontWeight: '500',
     marginTop: 6,
   },
+
   subtitle: {
     marginTop: 14,
     color: '#8B8B8B',
     fontSize: 13,
     fontWeight: '400',
   },
+
   chipsWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -129,6 +158,7 @@ const styles = StyleSheet.create({
     rowGap: 10,
     paddingBottom: 16,
   },
+
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -142,27 +172,35 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     shadowColor: '#000000',
     shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowRadius: 4,
     elevation: 1,
   },
+
   activeChip: {
     backgroundColor: '#FFF1E7',
     borderColor: '#FD7509',
   },
+
   icon: {
     fontSize: 16,
     marginRight: 8,
   },
+
   chipText: {
     color: '#1F1F1F',
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: -0.2,
   },
+
   activeText: {
     color: '#FD7509',
   },
+
   nextButton: {
     position: 'absolute',
     bottom: 12,
@@ -174,6 +212,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   nextText: {
     color: '#FFFFFF',
     fontSize: 18,
